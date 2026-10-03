@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Timetable & Work Adjustment System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="h-full bg-slate-50 font-sans text-slate-800 antialiased flex flex-col">
+    <!-- Login Screen -->
+    <div id="login-screen" class="fixed inset-0 z-[100] bg-gradient-to-br from-indigo-700 via-indigo-600 to-slate-900 flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8">
+            <div class="text-center mb-7">
+                <div class="mx-auto w-14 h-14 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center text-2xl mb-3">
+                    <i class="fa-solid fa-calendar-days"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800">Welcome to AcademiaSync</h2>
+                <p class="text-sm text-slate-500 mt-1">Sign in to access the timetable portal</p>
+            </div>
+
+            <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Username</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-3 top-3 text-slate-400"></i>
+                        <input id="login-username" type="text" required autocomplete="username" placeholder="Enter username"
+                            class="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Password</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-3 top-3 text-slate-400"></i>
+                        <input id="login-password" type="password" required autocomplete="current-password" placeholder="Enter password"
+                            class="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100">
+                        <button type="button" onclick="togglePassword('login-password', this)" class="absolute right-3 top-2.5 text-slate-400 hover:text-indigo-600">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <p id="login-error" class="hidden text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2"></p>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg font-semibold transition shadow-sm">
+                    <i class="fa-solid fa-right-to-bracket mr-2"></i> Login
+                </button>
+            </form>
+
+            <div class="flex items-center gap-3 my-6">
+                <div class="h-px bg-slate-200 flex-1"></div>
+                <span class="text-xs text-slate-400">OR</span>
+                <div class="h-px bg-slate-200 flex-1"></div>
+            </div>
+
+            
+            <p class="text-[11px] text-slate-400 text-center mt-4">Admin access only</p>
+        </div>
+    </div>
+
+    <!-- Header Navigation -->
+    <header class="bg-indigo-600 text-white shadow-md z-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-700 p-2 rounded-lg">
+                    <i class="fa-solid fa-calendar-days text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">AcademiaSync</h1>
+                    <p class="text-xs text-indigo-200">Timetable & Work Adjustment Portal</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span id="current-date-display"
+                    class="text-xs bg-indigo-700 px-3 py-1.5 rounded-full font-medium hidden sm:inline-block"></span>
+                <button onclick="logout()" class="text-xs bg-indigo-700 hover:bg-indigo-800 text-indigo-100 px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </button>
+                <button onclick="resetToDefaultData()"
+                    class="text-xs bg-indigo-700 hover:bg-indigo-800 text-indigo-100 px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate-right"></i> Reset Demo Data
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main App Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col overflow-hidden">
+
+        <!-- Navigation Tabs -->
+        <div class="flex flex-wrap gap-2 mb-6 border-b border-slate-200 pb-4">
+            <button onclick="switchTab('dashboard')" id="tab-dashboard"
+                class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition bg-indigo-600 text-white shadow-sm flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie"></i> Dashboard & Overview
+            </button>
+            <button onclick="switchTab('timetable')" id="tab-timetable"
+                class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 flex items-center gap-2">
+                <i class="fa-solid fa-table"></i> Master Timetable
+            </button>
+            <button onclick="switchTab('adjustments')" id="tab-adjustments"
+                class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 flex items-center gap-2">
+                <i class="fa-solid fa-user-clock"></i> Work Adjustments & Subs
+            </button>
+            <button onclick="switchTab('faculty')" id="tab-faculty"
+                class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 flex items-center gap-2">
+                <i class="fa-solid fa-chalkboard-user"></i> Faculty & Workload
+            </button>
+        </div>
+
+        <!-- Tab 1: Dashboard -->
+        <section id="section-dashboard" class="tab-content flex-1 overflow-y-auto space-y-6 pr-1">
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div
+                    class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Faculty</p>
+                        <h3 id="stat-total-faculty" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+                    </div>
+                    <div
+                        class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                </div>
+                <div
+                    class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Classes Today</p>
+                        <h3 id="stat-total-classes" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+                    </div>
+                    <div
+                        class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-book-open"></i>
+                    </div>
+                </div>
+                <div
+                    class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Absent Faculty Today
+                        </p>
+                        <h3 id="stat-absent-faculty" class="text-2xl font-bold text-amber-600 mt-1">0</h3>
+                    </div>
+                    <div
+                        class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-user-slash"></i>
+                    </div>
+                </div>
+                <div
+                    class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Pending Adjustments</p>
+                        <h3 id="stat-pending-subs" class="text-2xl font-bold text-rose-600 mt-1">0</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Action & Absentee Banner -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left 2 Cols: Absentee Management Quick Panel -->
+                <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-user-shield text-indigo-600"></i> Mark Faculty Absence & Assign Subs
+                        </h3>
+                        <span class="text-xs text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md">Live Adjustment
+                            Desk</span>
+                    </div>
+                    <p class="text-sm text-slate-600 mb-4">Select faculty members who are absent today to automatically
+                        scan their schedule and assign available substitutes based on workload.</p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4" id="absence-faculty-checkboxes">
+                        <!-- Dynamic checkboxes generated via JS -->
+                    </div>
+
+                    <div class="mt-auto pt-2 flex justify-end">
+                        <button onclick="switchTab('adjustments')"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-2 rounded-lg font-medium transition shadow-sm flex items-center gap-2">
+                            Manage All Adjustments <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Col: Today's Summary Widget -->
+                <div
+                    class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-xl p-6 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="font-semibold text-indigo-200 text-sm">System Status</h4>
+                            <span
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Active
+                            </span>
+                        </div>
+                        <p class="text-xs text-indigo-300 mb-4">Automatic workload distribution engine is running.
+                            Substitutions are prioritized by lowest weekly load and matching specialization.</p>
+                    </div>
+                    <div class="space-y-3 pt-4 border-t border-indigo-800/60 text-xs">
+                        <div class="flex justify-between items-center">
+                            <span class="text-indigo-300">Departments:</span>
+                            <span class="font-semibold text-white">I Bsc, II Bsc, III Bsc, I Msc, II Msc</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-indigo-300">Working Hours:</span>
+                            <span class="font-semibold text-white">9:00 AM - 2:00 PM (5 Periods)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Work Adjustments Table Preview -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-clipboard-list text-indigo-600"></i> Today's Active Adjustments &
+                        Substitutions
+                    </h3>
+                    <button onclick="switchTab('adjustments')"
+                        class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold">View All</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr
+                                class="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-200">
+                                <th class="py-3 px-6">Period & Time</th>
+                                <th class="py-3 px-6">Class / Subject</th>
+                                <th class="py-3 px-6">Original Faculty</th>
+                                <th class="py-3 px-6">Substitute Assigned</th>
+                                <th class="py-3 px-6">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboard-adjustments-tbody" class="divide-y divide-slate-100">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 2: Master Timetable -->
+        <section id="section-timetable" class="tab-content flex-1 overflow-y-auto space-y-6 pr-1 hidden">
+            <div
+                class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800">Master Class Timetable</h2>
+                    <p class="text-xs text-slate-500">Select branch and semester to view or edit the weekly lecture
+                        schedule.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-5 w-full sm:w-auto">
+                    <select id="tt-branch-select" onchange="renderMasterTimetable()"
+                        class="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg px-3 py-2 outline-none focus:border-indigo-600">
+                        <option value="I Bsc">I Bsc - Computer Science</option>
+                        <option value="II Bsc">II Bsc - Computer Science</option>
+                        <option value="III Bsc">III Bsc - Computer Science</option>
+                        <option value="I Msc">I Msc - Computer Science</option>
+                        <option value="II Msc">II Msc - Computer Science</option>
+                    </select>
+                    <select id="tt-sem-select" onchange="renderMasterTimetable()"
+                        class="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg px-3 py-2 outline-none focus:border-indigo-600">
+                        <option value="Sem 1">Semester 1</option>
+                        <option value="Sem 2">Semester 2</option>
+                        <option value="Sem 3">Semester 3</option>
+                        <option value="Sem 4" selected>Semester 4</option>
+                        <option value="Sem 5">Semester 5</option>
+                        <option value="Sem 6">Semester 6</option>
+                    </select>
+                    <button onclick="openAddSlotModal()"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Add Class Slot
+                    </button>
+                </div>
+            </div>
+
+            <!-- Timetable Matrix Display -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm min-w-[800px]">
+                        <thead>
+                            <tr
+                                class="bg-slate-100 text-slate-600 text-xs font-semibold uppercase tracking-wider border-b border-slate-200">
+                                <th class="py-3 px-4 w-28">Day / Period</th>
+                                <th class="py-3 px-4">Period 1<br><span
+                                        class="font-normal text-[10px] text-slate-400">08:00 - 09:00</span></th>
+                                <th class="py-3 px-4">Period 2<br><span
+                                        class="font-normal text-[10px] text-slate-400">09:15 - 10:15</span></th>
+                                <th class="py-3 px-4">Period 3<br><span
+                                        class="font-normal text-[10px] text-slate-400">10:15 - 11:15</span></th>
+                                <th class="py-3 px-4">Period 4<br><span
+                                        class="font-normal text-[10px] text-slate-400">12:15 - 12:45</span></th>
+                                <th class="py-3 px-4">Period 5<br><span
+                                        class="font-normal text-[10px] text-slate-400">12:45 - 01:45</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="master-timetable-tbody" class="divide-y divide-slate-200">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 3: Work Adjustments & Substitutions -->
+        <section id="section-adjustments" class="tab-content flex-1 overflow-y-auto space-y-6 pr-1 hidden">
+            <div
+                class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800">Work Adjustment & Substitution Desk</h2>
+                    <p class="text-xs text-slate-500">Manage faculty absences and assign qualified substitute teachers
+                        instantly.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="openNewAdjustmentModal()"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus"></i> Manual Adjustment
+                    </button>
+                </div>
+            </div>
+
+            <!-- Absent Faculty Control Card -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-user-xmark text-amber-600"></i> Faculty Absence Tracker for Today (<span
+                        id="current-day-label">Monday</span>)
+                </h3>
+                <p class="text-xs text-slate-500 mb-4">Toggle faculty members as absent to generate automated
+                    substitution prompts for their scheduled classes.</p>
+                <div id="absence-management-grid"
+                    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    <!-- Checkbox cards populated by JS -->
+                </div>
+            </div>
+
+            <!-- Active Adjustments List -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-indigo-600"></i> Adjustment Log & Substitutions
+                    </h3>
+                    <span id="adjustment-count-badge"
+                        class="text-xs bg-indigo-50 text-indigo-600 font-semibold px-2.5 py-1 rounded-full">0
+                        Records</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr
+                                class="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-200">
+                                <th class="py-3 px-6">Day / Period</th>
+                                <th class="py-3 px-6">Class / Branch</th>
+                                <th class="py-3 px-6">Subject</th>
+                                <th class="py-3 px-6">Absent Faculty</th>
+                                <th class="py-3 px-6">Substitute Faculty</th>
+                                <th class="py-3 px-6">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="full-adjustments-tbody" class="divide-y divide-slate-100">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 4: Faculty & Workload -->
+        <section id="section-faculty" class="tab-content flex-1 overflow-y-auto space-y-6 pr-1 hidden">
+            <div
+                class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800">Faculty Workload & Directory</h2>
+                    <p class="text-xs text-slate-500">Monitor weekly teaching hours, specializations, and contact info.
+                    </p>
+                </div>
+                <button onclick="openAddFacultyModal()"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-2">
+                    <i class="fa-solid fa-user-plus"></i> Add Faculty Member
+                </button>
+            </div>
+
+            <!-- Faculty Cards Grid -->
+            <div id="faculty-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal: Add / Edit Timetable Slot -->
+    <div id="modal-slot"
+        class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden">
+            <div class="px-6 py-4 bg-indigo-600 text-white flex items-center justify-between">
+                <h3 class="font-bold text-base" id="modal-slot-title">Configure Timetable Slot</h3>
+                <button onclick="closeModal('modal-slot')" class="text-indigo-200 hover:text-white"><i
+                        class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="form-slot" onsubmit="saveTimetableSlot(event)" class="p-6 space-y-4">
+                <input type="hidden" id="slot-id">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Branch</label>
+                        <select id="slot-branch"
+                            class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-600">
+                            <option value="I Bsc">I Bsc</option>
+                            <option value="II Bsc">II Bsc</option>
+                            <option value="II Bsc">III Bsc</option>
+                            <option value="I Msc">I Msc</option>
+                            <option value="II Msc">II Msc</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Semester</label>
+                        <select id="slot-sem"
+                            class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-600">
+                            <option value="Sem 1">Sem 1</option>
+                            <option value="Sem 2">Sem 2</option>
+                            <option value="Sem 3">Sem 3</option>
+                            <option value="Sem 4">Sem 4</option>
+                            <option value="Sem 5">Sem 5</option>
+                            <option value="Sem 6">Sem 6</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Day</label>
+                        <select id="slot-day"
+                            class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-600">
+                            <option value="Monday">Monday</option>
+                            <option value="Tuesday">Tuesday</option>
+                            <option value="Wednesday">Wednesday</option>
+                            <option value="Thursday">Thursday</option>
+                            <option value="Friday">Friday</option>
+                            <option value="Saturday">Saturday</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Period (1-6)</label>
+                        <select id="slot-period"
+                            class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-600">
+                            <option value="1">Period 1 (08:00)</option>
+                            <option value="2">Period 2 (09:15)</option>
+                            <option value="3">Period 3 (10:15)</option>
+                            <option value="4">Period 4 (11:15)</option>
+                            <option value="5">Period 5 (12:45)</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Subject Name</label>
+                    <input type="text" id="slot-subject" required placeholder="e.g. Data Structures"
+                        class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-600">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Assigned Faculty</label>
+                    <select id="slot-faculty"
+                        class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-600">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-slot')"
+                        class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition">Cancel</button>
+                    <button type="submit"
+                        class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm">Save
+                        Slot</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Assign Substitute / Manual Adjustment -->
+    <div id="modal-adjustment"
+        class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden">
+            <div class="px-6 py-4 bg-indigo-600 text-white flex items-center justify-between">
+                <h3 class="font-bold text-base">Assign Substitute Teacher</h3>
+                <button onclick="closeModal('modal-adjustment')" class="text-indigo-200 hover:text-white"><i
+                        class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="form-adjustment" onsubmit="saveAdjustment(event)" class="p-6 space-y-4">
+                <input type="hidden" id="adj-timetable-id">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Class / Subject
+                        Details</label>
+                    <div id="adj-class-info"
+                        class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-700">
+                        --
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Absent Faculty</label>
+                    <input type="text" id="adj-absent-display" disabled
+                        class="w-full bg-slate-100 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-600">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Select Substitute Faculty
+                        (Auto-Recommended)</label>
+                    <select id="adj-sub-faculty" required
+                        class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-600">
+                        <!-- Populated with available faculty -->
+                    </select>
+                    <p class="text-[11px] text-slate-400 mt-1">Recommended faculty have no classes during this period
+                        and lower weekly workload.</p>
+                </div>
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-adjustment')"
+                        class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition">Cancel</button>
+                    <button type="submit"
+                        class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm">Confirm
+                        Substitution</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Add Faculty -->
+    <div id="modal-faculty"
+        class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden">
+            <div class="px-6 py-4 bg-indigo-600 text-white flex items-center justify-between">
+                <h3 class="font-bold text-base">Add New Faculty Member</h3>
+                <button onclick="closeModal('modal-faculty')" class="text-indigo-200 hover:text-white"><i
+                        class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="form-faculty" onsubmit="saveFaculty(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Full Name & Title</label>
+                    <input type="text" id="fac-name" required placeholder="e.g. Dr. Alan Turing"
+                        class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-600">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Department / Branch</label>
+                    <select id="fac-dept"
+                        class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-600">
+                        <option value="I Bsc">I Bsc</option>
+                        <option value="II Bsc">II Bsc</option>
+                        <option value="III Bsc">III Bsc</option>
+                        <option value="I Msc">I Msc </option>
+                        <option value="II Msc">II Msc </option>
+
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Email Address</label>
+                    <input type="email" id="fac-email" required placeholder="alan@college.edu"
+                        class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-600">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Specialization /
+                        Subjects</label>
+                    <input type="text" id="fac-specs" required placeholder="Algorithms, AI, Mathematics"
+                        class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-600">
+                </div>
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-faculty')"
+                        class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition">Cancel</button>
+                    <button type="submit"
+                        class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm">Save
+                        Faculty</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast"
+        class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 text-sm">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toast-msg">Action completed successfully.</span>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const PERIODS = [1, 2, 3, 4, 5];
+
+        // Default Data Set
+        const DEFAULT_FACULTY = [
+            { id: 'f1', name: 'HOD. Abilash sam paulstin', dept: 'Computer science', email: 'kc.Abilash@naccas.edu', specs: 'Data Structures, Algorithms' },
+            { id: 'f2', name: 'Assistant Prof. Sheeba', dept: 'Computer science', email: 'r.sheeba@naccas.edu', specs: 'Operating Systems, Networking' },
+            { id: 'f4', name: 'Assistant Prof. Ajisha', dept: 'Computer science', email: 'm.Ajisha@naccas.edu', specs: 'Thermodynamics, Machine Design' },
+            { id: 'f5', name: 'Assistant Prof. Aji mol', dept: 'Computer science', email: 'l.Aji@naccas.edu', specs: 'Cloud computing' },
+            { id: 'f5', name: 'Assistant Prof. Anisha', dept: 'Computer science', email: 'S.Anisha@naccas.edu', specs: 'Linear Algebra, Calculus' }
+
+
+        ];
+
+        const DEFAULT_TIMETABLE = [
+            // CSE Sem 4
+            { id: 't1', branch: 'CSE', sem: 'Sem 4', day: 'Monday', period: 1, subject: 'Data Structures', facultyId: 'f1' },
+            { id: 't2', branch: 'CSE', sem: 'Sem 4', day: 'Monday', period: 2, subject: 'Operating Systems', facultyId: 'f2' },
+            { id: 't3', branch: 'CSE', sem: 'Sem 4', day: 'Monday', period: 3, subject: 'Linear Algebra', facultyId: 'f5' },
+            { id: 't4', branch: 'CSE', sem: 'Sem 4', day: 'Tuesday', period: 1, subject: 'Algorithms', facultyId: 'f1' },
+            { id: 't5', branch: 'CSE', sem: 'Sem 4', day: 'Tuesday', period: 4, subject: 'Computer Networks', facultyId: 'f2' },
+            // ECE Sem 4
+            { id: 't6', branch: 'ECE', sem: 'Sem 4', day: 'Monday', period: 1, subject: 'Digital Signal Processing', facultyId: 'f3' },
+            { id: 't7', branch: 'ECE', sem: 'Sem 4', day: 'Monday', period: 2, subject: 'Linear Algebra', facultyId: 'f5' },
+            // MECH Sem 4
+            { id: 't8', branch: 'MECH', sem: 'Sem 4', day: 'Monday', period: 1, subject: 'Thermodynamics', facultyId: 'f4' },
+            { id: 't9', branch: 'MECH', sem: 'Sem 4', day: 'Monday', period: 3, subject: 'Machine Design', facultyId: 'f4' }
+        ];
+
+        // Application State
+        let state = {
+            faculty: [],
+            timetable: [],
+            absentFaculty: [], // array of faculty IDs absent today
+            adjustments: []    // array of active adjustments { timetableId, substituteFacultyId, status }
+        };
+
+        // Admin-only browser-local authentication.
+        const DEFAULT_USER = { username: 'Computer science', password: 'NACCA@2012' };
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
+            const error = document.getElementById('login-error');
+
+            if (username !== DEFAULT_USER.username || password !== DEFAULT_USER.password) {
+                error.textContent = 'Invalid username or password. Admin access only.';
+                error.classList.remove('hidden');
+                return;
+            }
+
+            localStorage.setItem('academicsync_logged_in', 'true');
+            localStorage.setItem('academicsync_current_user', DEFAULT_USER.username);
+            error.classList.add('hidden');
+            document.getElementById('login-screen').classList.add('hidden');
+            initApp();
+        }
+
+        function togglePassword(inputId, button) {
+            const input = document.getElementById(inputId);
+            input.type = input.type === 'password' ? 'text' : 'password';
+            button.innerHTML = input.type === 'password'
+                ? '<i class="fa-solid fa-eye"></i>'
+                : '<i class="fa-solid fa-eye-slash"></i>';
+        }
+
+        function logout() {
+            localStorage.removeItem('academicsync_logged_in');
+            localStorage.removeItem('academicsync_current_user');
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('login-username').value = '';
+            document.getElementById('login-password').value = '';
+        }
+
+        function initAuth() {
+            const loggedIn = localStorage.getItem('academicsync_logged_in') === 'true';
+            if (loggedIn) {
+                document.getElementById('login-screen').classList.add('hidden');
+                initApp();
+            }
+        }
+
+        function initApp() {
+            const savedFaculty = localStorage.getItem('academicsync_faculty');
+            const savedTt = localStorage.getItem('academicsync_timetable');
+            const savedAbsent = localStorage.getItem('academicsync_absent');
+            const savedAdj = localStorage.getItem('academicsync_adjustments');
+
+            state.faculty = savedFaculty ? JSON.parse(savedFaculty) : DEFAULT_FACULTY;
+            state.timetable = savedTt ? JSON.parse(savedTt) : DEFAULT_TIMETABLE;
+            state.absentFaculty = savedAbsent ? JSON.parse(savedAbsent) : ['f1']; // Default Dr. Sarah Jenkins absent for demo
+            state.adjustments = savedAdj ? JSON.parse(savedAdj) : [
+                { id: 'adj_1', timetableId: 't1', substituteFacultyId: 'f2', status: 'Assigned' }
+            ];
+
+            // Set Header Date
+            const options = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
+            document.getElementById('current-date-display').innerHTML = `<i class="fa-regular fa-calendar"></i> ${new Date().toLocaleDateString('en-US', options)}`;
+            document.getElementById('current-day-label').innerText = 'Monday'; // Default simulation day
+
+            renderAll();
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('academicsync_faculty', JSON.stringify(state.faculty));
+            localStorage.setItem('academicsync_timetable', JSON.stringify(state.timetable));
+            localStorage.setItem('academicsync_absent', JSON.stringify(state.absentFaculty));
+            localStorage.setItem('academicsync_adjustments', JSON.stringify(state.adjustments));
+        }
+
+        function resetToDefaultData() {
+            state.faculty = [...DEFAULT_FACULTY];
+            state.timetable = [...DEFAULT_TIMETABLE];
+            state.absentFaculty = ['f1'];
+            state.adjustments = [{ id: 'adj_1', timetableId: 't1', substituteFacultyId: 'f2', status: 'Assigned' }];
+            saveToLocalStorage();
+            renderAll();
+            showToast('Demo data successfully reset!', 'success');
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm');
+                el.classList.add('bg-white', 'text-slate-600', 'hover:bg-slate-100', 'border', 'border-slate-200');
+            });
+
+            document.getElementById(`section-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            activeBtn.classList.remove('bg-white', 'text-slate-600', 'hover:bg-slate-100', 'border', 'border-slate-200');
+            activeBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-sm');
+
+            if (tabId === 'timetable') renderMasterTimetable();
+            if (tabId === 'adjustments') renderAdjustmentsView();
+            if (tabId === 'faculty') renderFacultyView();
+            if (tabId === 'dashboard') renderDashboard();
+        }
+
+        function renderAll() {
+            renderDashboard();
+            renderMasterTimetable();
+            renderAdjustmentsView();
+            renderFacultyView();
+        }
+
+        function renderDashboard() {
+            // Stats
+            document.getElementById('stat-total-faculty').innerText = state.faculty.length;
+
+            // Classes today (Monday simulation)
+            const todayClasses = state.timetable.filter(t => t.day === 'Monday');
+            document.getElementById('stat-total-classes').innerText = todayClasses.length;
+            document.getElementById('stat-absent-faculty').innerText = state.absentFaculty.length;
+
+            const pendingSubs = todayClasses.filter(t => {
+                const isAbsent = state.absentFaculty.includes(t.facultyId);
+                const hasSub = state.adjustments.some(a => a.timetableId === t.id);
+                return isAbsent && !hasSub;
+            }).length;
+
+            document.getElementById('stat-pending-subs').innerText = pendingSubs;
+
+            // Absence checkboxes on dashboard
+            const container = document.getElementById('absence-faculty-checkboxes');
+            container.innerHTML = state.faculty.map(f => {
+                const isAbsent = state.absentFaculty.includes(f.id);
+                return `
+                    <label class="flex items-center justify-between p-3 rounded-xl border ${isAbsent ? 'border-amber-300 bg-amber-50/50' : 'border-slate-200 bg-slate-50'} cursor-pointer hover:border-indigo-300 transition">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" ${isAbsent ? 'checked' : ''} onchange="toggleFacultyAbsence('${f.id}')" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                            <div>
+                                <p class="text-sm font-semibold text-slate-800">${f.name}</p>
+                                <p class="text-[11px] text-slate-500">${f.dept} • ${f.specs}</p>
+                            </div>
+                        </div>
+                        <span class="text-xs px-2 py-0.5 rounded-full font-medium ${isAbsent ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}">
+                            ${isAbsent ? 'Absent' : 'Present'}
+                        </span>
+                    </label>
+                `;
+            }).join('');
+
+            // Dashboard adjustments table
+            const tbody = document.getElementById('dashboard-adjustments-tbody');
+            const activeAdjustments = state.adjustments.map(adj => {
+                const tt = state.timetable.find(t => t.id === adj.timetableId);
+                const absentFac = state.faculty.find(f => f.id === tt?.facultyId);
+                const subFac = state.faculty.find(f => f.id === adj.substituteFacultyId);
+                return { ...adj, tt, absentFac, subFac };
+            }).filter(item => item.tt);
+
+            if (activeAdjustments.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400 text-sm">No active substitutions recorded for today.</td></tr>`;
+            } else {
+                tbody.innerHTML = activeAdjustments.map(item => `
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-3 px-6 font-medium text-slate-800">Period ${item.tt.period} <span class="text-xs text-slate-400 block">${item.tt.day}</span></td>
+                        <td class="py-3 px-6"><span class="bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-md text-xs font-semibold">${item.tt.branch} ${item.tt.sem}</span><br><span class="text-xs text-slate-600 mt-1 inline-block">${item.tt.subject}</span></td>
+                        <td class="py-3 px-6 text-slate-600 font-medium">${item.absentFac?.name || 'Unknown'} <span class="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded ml-1">Absent</span></td>
+                        <td class="py-3 px-6 text-emerald-700 font-medium">${item.subFac?.name || 'Unassigned'} <span class="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded ml-1">Substitute</span></td>
+                        <td class="py-3 px-6"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ${item.status}</span></td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        function renderMasterTimetable() {
+            const branch = document.getElementById('tt-branch-select').value;
+            const sem = document.getElementById('tt-sem-select').value;
+            const tbody = document.getElementById('master-timetable-tbody');
+
+            tbody.innerHTML = DAYS.map(day => {
+                let rowHtml = `<tr class="hover:bg-slate-50/50"><td class="py-4 px-4 font-semibold text-slate-700 bg-slate-50 border-r border-slate-200">${day}</td>`;
+
+                PERIODS.forEach(period => {
+                    const slot = state.timetable.find(t => t.branch === branch && t.sem === sem && t.day === day && t.period === period);
+                    const fac = slot ? state.faculty.find(f => f.id === slot.facultyId) : null;
+                    const isAbsent = slot && state.absentFaculty.includes(slot.facultyId);
+                    const adjustment = slot ? state.adjustments.find(a => a.timetableId === slot.id) : null;
+                    const subFac = adjustment ? state.faculty.find(f => f.id === adjustment.substituteFacultyId) : null;
+
+                    if (slot) {
+                        rowHtml += `
+                            <td class="py-3 px-4 border-r border-slate-100 align-top">
+                                <div class="p-2.5 rounded-xl border ${isAbsent ? 'bg-amber-50/60 border-amber-300' : 'bg-indigo-50/40 border-indigo-100'} relative group">
+                                    <div class="font-semibold text-xs text-indigo-900">${slot.subject}</div>
+                                    <div class="text-[11px] ${isAbsent ? 'text-amber-700 font-bold' : 'text-slate-600'} mt-0.5">
+                                        <i class="fa-solid fa-chalkboard-user mr-1"></i>${fac?.name || 'TBA'}
+                                        ${isAbsent ? '<span class="text-[9px] bg-amber-200 text-amber-800 px-1 rounded ml-1">Absent</span>' : ''}
+                                    </div>
+                                    ${subFac ? `<div class="text-[10px] text-emerald-700 font-medium mt-1 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Sub: ${subFac.name}</div>` : ''}
+                                    <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition flex gap-1 bg-white p-1 rounded shadow-sm border border-slate-200">
+                                        <button onclick="openEditSlotModal('${slot.id}')" title="Edit Slot" class="text-indigo-600 hover:text-indigo-800 px-1"><i class="fa-solid fa-pen text-xs"></i></button>
+                                        <button onclick="deleteSlot('${slot.id}')" title="Delete Slot" class="text-rose-600 hover:text-rose-800 px-1"><i class="fa-solid fa-trash text-xs"></i></button>
+                                    </div>
+                                </div>
+                            </td>
+                        `;
+                    } else {
+                        rowHtml += `
+                            <td class="py-3 px-4 border-r border-slate-100 align-top">
+                                <button onclick="openAddSlotModalPreset('${branch}', '${sem}', '${day}', ${period})" class="w-full h-full min-h-[60px] border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-xl flex items-center justify-center text-slate-400 hover:text-indigo-600 text-xs transition">
+                                    <i class="fa-solid fa-plus mr-1"></i> Add
+                                </button>
+                            </td>
+                        `;
+                    }
+                });
+
+                rowHtml += `</tr>`;
+                return rowHtml;
+            }).join('');
+        }
+
+        function toggleFacultyAbsence(facultyId) {
+            if (state.absentFaculty.includes(facultyId)) {
+                state.absentFaculty = state.absentFaculty.filter(id => id !== facultyId);
+                // Remove adjustments linked to this faculty for today
+                const absentSlots = state.timetable.filter(t => t.facultyId === facultyId && t.day === 'Monday').map(t => t.id);
+                state.adjustments = state.adjustments.filter(a => !absentSlots.includes(a.timetableId));
+            } else {
+                state.absentFaculty.push(facultyId);
+            }
+            saveToLocalStorage();
+            renderAll();
+            showToast('Faculty absence status updated.', 'success');
+        }
+
+        function renderAdjustmentsView() {
+            // Render absence checkboxes grid
+            const grid = document.getElementById('absence-management-grid');
+            grid.innerHTML = state.faculty.map(f => {
+                const isAbsent = state.absentFaculty.includes(f.id);
+                return `
+                    <div class="p-4 rounded-xl border ${isAbsent ? 'border-amber-300 bg-amber-50/70 shadow-sm' : 'border-slate-200 bg-white'} flex flex-col justify-between gap-3">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h4 class="font-bold text-sm text-slate-800">${f.name}</h4>
+                                <p class="text-xs text-slate-500">${f.dept}</p>
+                            </div>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold ${isAbsent ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">
+                                ${isAbsent ? 'Absent Today' : 'Working'}
+                            </span>
+                        </div>
+                        <button onclick="toggleFacultyAbsence('${f.id}')" class="w-full py-1.5 px-3 rounded-lg text-xs font-semibold transition ${isAbsent ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-amber-500 hover:bg-amber-600 text-white'} shadow-sm">
+                            ${isAbsent ? 'Mark as Present' : 'Mark as Absent'}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            // Render adjustments table for today's absent classes
+            const tbody = document.getElementById('full-adjustments-tbody');
+            const todayClasses = state.timetable.filter(t => t.day === 'Monday');
+            const absentClasses = todayClasses.filter(t => state.absentFaculty.includes(t.facultyId));
+
+            document.getElementById('adjustment-count-badge').innerText = `${absentClasses.length} Pending/Managed`;
+
+            if (absentClasses.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-400 text-sm">No faculty absences or adjustments required for today! All classes staffed.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = absentClasses.map(t => {
+                const absentFac = state.faculty.find(f => f.id === t.facultyId);
+                const adj = state.adjustments.find(a => a.timetableId === t.id);
+                const subFac = adj ? state.faculty.find(f => f.id === adj.substituteFacultyId) : null;
+
+                return `
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-3 px-6 font-semibold text-slate-800">Period ${t.period} <span class="text-xs font-normal text-slate-400 block">${t.day}</span></td>
+                        <td class="py-3 px-6"><span class="bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-md text-xs font-semibold">${t.branch} ${t.sem}</span></td>
+                        <td class="py-3 px-6 font-medium text-slate-700">${t.subject}</td>
+                        <td class="py-3 px-6 text-slate-600">${absentFac?.name || 'Unknown'} <span class="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded ml-1 font-semibold">Absent</span></td>
+                        <td class="py-3 px-6 font-medium ${subFac ? 'text-emerald-700' : 'text-rose-600'}">
+                            ${subFac ? `<i class="fa-solid fa-user-check mr-1"></i> ${subFac.name}` : '<span class="italic text-xs bg-rose-50 px-2 py-1 rounded text-rose-600 border border-rose-200">Not Assigned</span>'}
+                        </td>
+                        <td class="py-3 px-6">
+                            <button onclick="openAssignSubModal('${t.id}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition border border-indigo-200 flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-shuffle"></i> ${subFac ? 'Change Substitute' : 'Assign Substitute'}
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderFacultyView() {
+            const grid = document.getElementById('faculty-grid');
+            grid.innerHTML = state.faculty.map(f => {
+                // Calculate weekly teaching hours / load
+                const weeklyClasses = state.timetable.filter(t => t.facultyId === f.id).length;
+                const substitutionCount = state.adjustments.filter(a => a.substituteFacultyId === f.id).length;
+                const totalLoad = weeklyClasses + substitutionCount;
+
+                return `
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col justify-between gap-4">
+                        <div>
+                            <div class="flex items-start justify-between mb-2">
+                                <div>
+                                    <h3 class="font-bold text-base text-slate-800">${f.name}</h3>
+                                    <p class="text-xs text-indigo-600 font-semibold">${f.dept} Department</p>
+                                </div>
+                                <span class="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-full font-bold">${totalLoad} hrs/wk</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mb-2"><i class="fa-regular fa-envelope mr-1"></i> ${f.email}</p>
+                            <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-100 text-xs text-slate-600">
+                                <span class="font-semibold text-slate-700 block mb-0.5">Specialization:</span>
+                                ${f.specs}
+                            </div>
+                        </div>
+                        <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                            <span>Scheduled Classes: <strong>${weeklyClasses}</strong></span>
+                            <span>Submissions: <strong>${substitutionCount}</strong></span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function populateFacultyDropdown(selectId, selectedId = '') {
+            const select = document.getElementById(selectId);
+            select.innerHTML = state.faculty.map(f => `
+                <option value="${f.id}" ${f.id === selectedId ? 'selected' : ''}>${f.name} (${f.dept})</option>
+            `).join('');
+        }
+
+        function openAddSlotModal() {
+            document.getElementById('modal-slot-title').innerText = 'Add Class Slot';
+            document.getElementById('slot-id').value = '';
+            document.getElementById('slot-subject').value = '';
+            populateFacultyDropdown('slot-faculty');
+            document.getElementById('modal-slot').classList.remove('hidden');
+        }
+
+        function openAddSlotModalPreset(branch, sem, day, period) {
+            openAddSlotModal();
+            document.getElementById('slot-branch').value = branch;
+            document.getElementById('slot-sem').value = sem;
+            document.getElementById('slot-day').value = day;
+            document.getElementById('slot-period').value = period;
+        }
+
+        function openEditSlotModal(slotId) {
+            const slot = state.timetable.find(t => t.id === slotId);
+            if (!slot) return;
+
+            document.getElementById('modal-slot-title').innerText = 'Edit Class Slot';
+            document.getElementById('slot-id').value = slot.id;
+            document.getElementById('slot-branch').value = slot.branch;
+            document.getElementById('slot-sem').value = slot.sem;
+            document.getElementById('slot-day').value = slot.day;
+            document.getElementById('slot-period').value = slot.period;
+            document.getElementById('slot-subject').value = slot.subject;
+            populateFacultyDropdown('slot-faculty', slot.facultyId);
+            document.getElementById('modal-slot').classList.remove('hidden');
+        }
+
+        function saveTimetableSlot(e) {
+            e.preventDefault();
+            const id = document.getElementById('slot-id').value;
+            const branch = document.getElementById('slot-branch').value;
+            const sem = document.getElementById('slot-sem').value;
+            const day = document.getElementById('slot-day').value;
+            const period = parseInt(document.getElementById('slot-period').value);
+            const subject = document.getElementById('slot-subject').value;
+            const facultyId = document.getElementById('slot-faculty').value;
+
+            if (id) {
+                const slot = state.timetable.find(t => t.id === id);
+                if (slot) {
+                    slot.branch = branch;
+                    slot.sem = sem;
+                    slot.day = day;
+                    slot.period = period;
+                    slot.subject = subject;
+                    slot.facultyId = facultyId;
+                }
+            } else {
+                const newSlot = {
+                    id: 't_' + Date.now(),
+                    branch, sem, day, period, subject, facultyId
+                };
+                state.timetable.push(newSlot);
+            }
+
+            saveToLocalStorage();
+            closeModal('modal-slot');
+            renderAll();
+            showToast('Timetable slot saved successfully!', 'success');
+        }
+
+        function deleteSlot(slotId) {
+            if (confirm('Are you sure you want to delete this class slot?')) {
+                state.timetable = state.timetable.filter(t => t.id !== slotId);
+                state.adjustments = state.adjustments.filter(a => a.timetableId !== slotId);
+                saveToLocalStorage();
+                renderAll();
+                showToast('Slot removed.', 'success');
+            }
+        }
+
+        function openAssignSubModal(timetableId) {
+            const slot = state.timetable.find(t => t.id === timetableId);
+            if (!slot) return;
+
+            const absentFac = state.faculty.find(f => f.id === slot.facultyId);
+            document.getElementById('adj-timetable-id').value = slot.id;
+            document.getElementById('adj-class-info').innerText = `${slot.branch} ${slot.sem} • Period ${slot.period} (${slot.day}) • Subject: ${slot.subject}`;
+            document.getElementById('adj-absent-display').value = absentFac ? absentFac.name : 'Unknown';
+
+            // Filter available substitutes (not absent, and preferably free during this period/day)
+            const availableFaculty = state.faculty.filter(f => f.id !== slot.facultyId && !state.absentFaculty.includes(f.id));
+
+            const subSelect = document.getElementById('adj-sub-faculty');
+            subSelect.innerHTML = availableFaculty.map(f => {
+                const weeklyLoad = state.timetable.filter(t => t.facultyId === f.id).length;
+                return `<option value="${f.id}">${f.name} (${f.dept} - Workload: ${weeklyLoad} classes/wk)</option>`;
+            }).join('');
+
+            document.getElementById('modal-adjustment').classList.remove('hidden');
+        }
+
+        function saveAdjustment(e) {
+            e.preventDefault();
+            const timetableId = document.getElementById('adj-timetable-id').value;
+            const subFacultyId = document.getElementById('adj-sub-faculty').value;
+
+            // Check if adjustment already exists for this slot
+            let adj = state.adjustments.find(a => a.timetableId === timetableId);
+            if (adj) {
+                adj.substituteFacultyId = subFacultyId;
+            } else {
+                state.adjustments.push({
+                    id: 'adj_' + Date.now(),
+                    timetableId,
+                    substituteFacultyId: subFacultyId,
+                    status: 'Assigned'
+                });
+            }
+
+            saveToLocalStorage();
+            closeModal('modal-adjustment');
+            renderAll();
+            showToast('Substitute teacher successfully assigned!', 'success');
+        }
+
+        function openAddFacultyModal() {
+            document.getElementById('form-faculty').reset();
+            document.getElementById('modal-faculty').classList.remove('hidden');
+        }
+
+        function saveFaculty(e) {
+            e.preventDefault();
+            const name = document.getElementById('fac-name').value;
+            const dept = document.getElementById('fac-dept').value;
+            const email = document.getElementById('fac-email').value;
+            const specs = document.getElementById('fac-specs').value;
+
+            const newFac = {
+                id: 'f_' + Date.now(),
+                name, dept, email, specs
+            };
+
+            state.faculty.push(newFac);
+            saveToLocalStorage();
+            closeModal('modal-faculty');
+            renderAll();
+            showToast('New faculty member added successfully!', 'success');
+        }
+
+        function openNewAdjustmentModal() {
+            switchTab('adjustments');
+            showToast('Select an absent faculty member or click Assign on pending classes below.', 'info');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-msg');
+            const iconEl = document.getElementById('toast-icon');
+
+            msgEl.innerText = msg;
+            if (type === 'success') {
+                iconEl.className = 'fa-solid fa-circle-check text-emerald-400';
+            } else {
+                iconEl.className = 'fa-solid fa-circle-info text-sky-400';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // Initialize on window load
+        window.onload = initApp;
+    </script>
+</body>
+
+</html>
